@@ -1,6 +1,7 @@
 import { Command } from 'commander';
+import superagent from 'superagent';
 import http from 'node:http';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const program = new Command();
 
@@ -58,7 +59,54 @@ try {
         return;
       }
 
-      // Реалізація кожного дозволеного методу — в окремому наступному етапі.
+      if (request.method === 'GET') {
+        const code = request.url.slice(1);
+        const cacheFile = `${options.cache}/${code}.jpg`;
+        let image;
+        let source = 'cache';
+
+        try {
+          // Без кодування readFile повертає Buffer із незміненими байтами.
+          image = await readFile(cacheFile);
+        } catch (error) {
+          // Лише відсутність файлу означає промах кешу.
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+
+          try {
+            const upstream = await superagent
+              .get(`https://http.cat/${code}`)
+              .responseType('blob')
+              .timeout({ response: 5000, deadline: 15000 });
+
+            // У Node.js responseType('blob') повертає двійковий Buffer.
+            if (upstream.type !== 'image/jpeg' || !Buffer.isBuffer(upstream.body) || upstream.body.length === 0) {
+              throw new Error('Джерело не повернуло JPEG-зображення.');
+            }
+
+            image = upstream.body;
+          } catch (error) {
+            console.error(`Помилка http.cat для коду ${code}: ${error.message}`);
+            sendText(response, 404, 'Картинку не знайдено або джерело http.cat недоступне.');
+            return;
+          }
+
+          // Спочатку зберігаємо картинку, потім відповідаємо клієнтові.
+          // Помилки диска обробляє зовнішній catch як 500, а не як 404 джерела.
+          await writeFile(cacheFile, image);
+          source = 'http.cat';
+        }
+
+        response.writeHead(200, {
+          'Content-Type': 'image/jpeg',
+          'X-Image-Source': source,
+        });
+        response.end(image);
+        return;
+      }
+
+      // PUT і DELETE реалізуємо в окремих наступних етапах.
       sendText(response, 501, `Метод ${request.method} ще не реалізовано.`);
     } catch (error) {
       console.error(`Помилка обробки запиту: ${error.message}`);
