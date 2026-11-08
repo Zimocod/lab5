@@ -1,0 +1,16 @@
+{
+  "name": "lab5",
+  "version": "1.0.0",
+  "description": "Кешуючий проксі-сервер для зображень http.cat",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "check": "node --check main.js"
+  },
+  "private": true,
+  "dependencies": {
+    "commander": "^15.1.0",
+    "superagent": "^10.4.2"
+  }
+}
