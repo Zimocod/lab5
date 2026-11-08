@@ -59,9 +59,10 @@ try {
         return;
       }
 
+      const code = request.url.slice(1);
+      const cacheFile = `${options.cache}/${code}.jpg`;
+
       if (request.method === 'GET') {
-        const code = request.url.slice(1);
-        const cacheFile = `${options.cache}/${code}.jpg`;
         let image;
         let source = 'cache';
 
@@ -106,7 +107,27 @@ try {
         return;
       }
 
-      // PUT і DELETE реалізуємо в окремих наступних етапах.
+      if (request.method === 'PUT') {
+        const chunks = [];
+
+        // request є потоком: очікуємо всі частини тіла без колбеків .on().
+        for await (const chunk of request) {
+          chunks.push(chunk);
+        }
+
+        const image = Buffer.concat(chunks);
+        if (image.length === 0) {
+          sendText(response, 400, 'Тіло PUT-запиту не може бути порожнім. Надішліть картинку.');
+          return;
+        }
+
+        // writeFile створює новий файл або повністю замінює наявний.
+        await writeFile(cacheFile, image);
+        sendText(response, 201, `Картинку для коду ${code} збережено в кеші.`);
+        return;
+      }
+
+      // DELETE реалізуємо на наступному етапі.
       sendText(response, 501, `Метод ${request.method} ще не реалізовано.`);
     } catch (error) {
       console.error(`Помилка обробки запиту: ${error.message}`);
