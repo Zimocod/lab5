@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import superagent from 'superagent';
 import http from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 
 const program = new Command();
 
@@ -127,8 +127,21 @@ try {
         return;
       }
 
-      // DELETE реалізуємо на наступному етапі.
-      sendText(response, 501, `Метод ${request.method} ще не реалізовано.`);
+      if (request.method === 'DELETE') {
+        try {
+          // Видаляємо лише файл цього коду; попередня перевірка існування не потрібна.
+          await unlink(cacheFile);
+        } catch (error) {
+          if (error.code === 'ENOENT') {
+            sendText(response, 404, 'Картинку не знайдено в кеші.');
+            return;
+          }
+          throw error;
+        }
+
+        sendText(response, 200, `Картинку для коду ${code} видалено з кешу.`);
+        return;
+      }
     } catch (error) {
       console.error(`Помилка обробки запиту: ${error.message}`);
       if (!response.headersSent && !response.destroyed) {
