@@ -1,4 +1,5 @@
 # Verifies the collection's HTTP order via curl, not the Postman runtime.
+param([int]$Port = 3001)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Push-Location (Split-Path $PSScriptRoot -Parent)
@@ -14,21 +15,24 @@ try {
     if ($collection.item.Count -ne 11) { throw 'Review expected statuses for the changed collection.' }
     $baseUrl = $collection.variable[0].value
     if ($baseUrl -ne 'http://127.0.0.1:3001') { throw 'This script expects the default local test server.' }
+    $baseUrl = "http://127.0.0.1:$Port"
     $expectedStatuses = @(@(200,404), @(200,404), @(200), @(200), @(201), @(200), @(200), @(404), @(404), @(405), @(200))
     $expectedSources = @('', '', 'http.cat', 'cache', '', 'cache', '', '', '', '', '')
     $writer.WriteLine("`r`nStage 8: two curl runs of the Postman collection's HTTP sequence.")
-    $writer.WriteLine('powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\postman\check-sequence.ps1')
+    $writer.WriteLine("powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\postman\check-sequence.ps1 -Port $Port")
     $writer.WriteLine("# Isolated cache: $folder/cache; actual Postman scripts/Runner are NOT executed here.")
-    $writer.WriteLine("# Start hidden process: node main.js -h 127.0.0.1 -p 3001 -c $folder/cache")
-    $server = Start-Process -FilePath (Get-Command node).Source -ArgumentList @('main.js', '-h', '127.0.0.1', '-p', '3001', '-c', "$folder/cache") `
+    $writer.WriteLine("# Start hidden process: node main.js -h 127.0.0.1 -p $Port -c $folder/cache")
+    $server = Start-Process -FilePath (Get-Command node).Source -ArgumentList @('main.js', '-h', '127.0.0.1', '-p', "$Port", '-c', "$folder/cache") `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput "$folder/server.log" -RedirectStandardError "$folder/errors.log"
     Start-Sleep -Milliseconds 800
-    if ($server.HasExited) { throw 'Test server did not start; check port 3001.' }
+    if ($server.HasExited) { throw "Test server did not start; check port $Port." }
     for ($run = 1; $run -le 2; $run++) {
         $times = @{}
         for ($i = 0; $i -lt $collection.item.Count; $i++) {
             $item = $collection.item[$i]
-            $url = $item.request.url.Replace('{{baseUrl}}', $baseUrl)
+            $rawUrl = $item.request.url
+            if ($rawUrl -isnot [string]) { $rawUrl = $rawUrl.raw }
+            $url = $rawUrl.Replace('{{baseUrl}}', $baseUrl)
             $prefix = "$folder/run-$run-request-$i"
             $curlArgs = @('--silent', '--show-error', '--stderr', "$prefix.curl-errors", '--noproxy', '*', '--max-time', '25',
                 '--request', $item.request.method, '--dump-header', "$prefix.headers", '--output', "$prefix.body", '--write-out', '%{time_total}')
@@ -73,7 +77,7 @@ try {
         $writer.WriteLine("# CURL timing only: run=$run; sourceMs=$($times['source']); cacheMs=$($times['cache'])")
         Write-Host "CURL timings: source=$($times['source']) ms; cache=$($times['cache']) ms"
     }
-    $writer.WriteLine("# 22 HTTP requests; failures=$failures. Postman Runner and browser screenshots still pending.")
+    $writer.WriteLine("# 22 HTTP requests; failures=$failures. This script does not execute Postman Runner or capture browser screenshots.")
     Write-Host "22 HTTP requests; failures=$failures; artifacts=$folder"
     if ($failures -gt 0) { throw "$failures HTTP checks failed." }
 } finally {

@@ -1,16 +1,12 @@
 {
   "info": {
+    "_postman_id": "de658997-11ca-4b9a-9961-1f3c9edc239b",
     "name": "Лабораторна 5 — кешуючий HTTP-проксі",
-    "description": "Запускати на окремому тестовому сервері (порт 3001). Перші два запити видаляють /200 і /432. Порядок забезпечує повторюваність запусків. PUT використовує локальний JPEG output/custom/432.jpg. Налаштуйте робочу теку Postman на корінь проєкту. Час GET зберігається в remoteTimeMs/cacheTimeMs; немає припущення, що кеш завжди швидший. Файл підготовлений для імпорту; запуск у Postman потребує окремої перевірки.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "description": "Запускати на окремому тестовому сервері (порт 3001). Перші два запити видаляють /200 і /432. Порядок забезпечує повторюваність запусків. PUT використовує локальний JPEG output/custom/432.jpg. Налаштуйте робочу теку Postman на корінь проєкту. Час GET зберігається в remoteTimeMs/cacheTimeMs; немає припущення, що кеш завжди швидший. Колекцію експортовано користувачем із Postman після перевірок; для переносимості шлях binary-файла зроблено відносним.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "60046704",
+    "_collection_link": "https://go.postman.co/collection/60046704-de658997-11ca-4b9a-9961-1f3c9edc239b?source=collection_link"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://127.0.0.1:3001",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "01. Підготовка: очистити /200",
@@ -35,7 +31,15 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{baseUrl}}/200",
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        },
         "description": "Очікується HTTP 200 або 404."
       },
       "response": []
@@ -61,7 +65,15 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{baseUrl}}/432",
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
         "description": "Очікується HTTP 200 або 404."
       },
       "response": []
@@ -92,7 +104,15 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/200",
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        },
         "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: http.cat."
       },
       "response": []
@@ -123,7 +143,15 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/200",
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        },
         "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: cache."
       },
       "response": []
@@ -136,12 +164,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"HTTP 201\", function () {",
-              "  pm.expect(pm.response.code).to.be.oneOf([201]);",
-              "});",
-              "pm.test(\"Content-Type\", function () {",
-              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
-              "});"
+              "pm.test(\"HTTP 201\", function () {\n  pm.expect(pm.response.code).to.be.oneOf([201]);\n});\npm.test(\"Content-Type\", function () {\n  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");\n});"
             ]
           }
         }
@@ -154,14 +177,22 @@
             "value": "image/jpeg"
           }
         ],
-        "url": "{{baseUrl}}/432",
-        "description": "Очікується HTTP 201. Body → binary: output/custom/432.jpg, відносно робочої теки Postman.",
         "body": {
           "mode": "file",
           "file": {
             "src": "output/custom/432.jpg"
           }
-        }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
+        "description": "Очікується HTTP 201. Body → binary: output/custom/432.jpg, відносно робочої теки Postman."
       },
       "response": []
     },
@@ -189,7 +220,15 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/432",
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
         "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: cache."
       },
       "response": []
@@ -215,7 +254,15 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{baseUrl}}/432",
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
         "description": "Очікується HTTP 200."
       },
       "response": []
@@ -241,7 +288,15 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{baseUrl}}/432",
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
         "description": "Очікується HTTP 404."
       },
       "response": []
@@ -270,7 +325,15 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/432",
+        "url": {
+          "raw": "{{baseUrl}}/432",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "432"
+          ]
+        },
         "description": "Очікується HTTP 404."
       },
       "response": []
@@ -299,7 +362,15 @@
       "request": {
         "method": "POST",
         "header": [],
-        "url": "{{baseUrl}}/200",
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        },
         "description": "Очікується HTTP 405."
       },
       "response": []
@@ -325,10 +396,32 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{baseUrl}}/200",
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        },
         "description": "Очікується HTTP 200."
       },
       "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3001"
+    },
+    {
+      "key": "remoteTimeMs",
+      "value": ""
+    },
+    {
+      "key": "cacheTimeMs",
+      "value": ""
     }
   ]
 }
