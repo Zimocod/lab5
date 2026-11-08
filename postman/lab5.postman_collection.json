@@ -1,0 +1,334 @@
+{
+  "info": {
+    "name": "Лабораторна 5 — кешуючий HTTP-проксі",
+    "description": "Запускати на окремому тестовому сервері (порт 3001). Перші два запити видаляють /200 і /432. Порядок забезпечує повторюваність запусків. PUT використовує локальний JPEG output/custom/432.jpg. Налаштуйте робочу теку Postman на корінь проєкту. Час GET зберігається в remoteTimeMs/cacheTimeMs; немає припущення, що кеш завжди швидший. Файл підготовлений для імпорту; запуск у Postman потребує окремої перевірки.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Підготовка: очистити /200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200 або 404\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200,404]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});",
+              "pm.collectionVariables.unset(\"remoteTimeMs\");",
+              "pm.collectionVariables.unset(\"cacheTimeMs\");"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/200",
+        "description": "Очікується HTTP 200 або 404."
+      },
+      "response": []
+    },
+    {
+      "name": "02. Підготовка: очистити /432",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200 або 404\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200,404]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 200 або 404."
+      },
+      "response": []
+    },
+    {
+      "name": "03. GET із http.cat",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"image/jpeg\");",
+              "});",
+              "pm.test(\"Джерело картинки\", function () {",
+              "  pm.expect(pm.response.headers.get(\"X-Image-Source\")).to.eql(\"http.cat\");",
+              "});",
+              "pm.collectionVariables.set(\"remoteTimeMs\", pm.response.responseTime);",
+              "console.log(\"GET http.cat, ms:\", pm.response.responseTime);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/200",
+        "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: http.cat."
+      },
+      "response": []
+    },
+    {
+      "name": "04. Повторний GET із кешу",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"image/jpeg\");",
+              "});",
+              "pm.test(\"Джерело картинки\", function () {",
+              "  pm.expect(pm.response.headers.get(\"X-Image-Source\")).to.eql(\"cache\");",
+              "});",
+              "pm.collectionVariables.set(\"cacheTimeMs\", pm.response.responseTime);",
+              "console.log(\"GET http.cat / cache, ms:\", pm.collectionVariables.get(\"remoteTimeMs\"), pm.response.responseTime);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/200",
+        "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: cache."
+      },
+      "response": []
+    },
+    {
+      "name": "05. PUT власної картинки",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([201]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "image/jpeg"
+          }
+        ],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 201. Body → binary: output/custom/432.jpg, відносно робочої теки Postman.",
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "output/custom/432.jpg"
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06. GET після PUT",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"image/jpeg\");",
+              "});",
+              "pm.test(\"Джерело картинки\", function () {",
+              "  pm.expect(pm.response.headers.get(\"X-Image-Source\")).to.eql(\"cache\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 200, image/jpeg, X-Image-Source: cache."
+      },
+      "response": []
+    },
+    {
+      "name": "07. DELETE картинки",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 200."
+      },
+      "response": []
+    },
+    {
+      "name": "08. Повторний DELETE",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([404]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 404."
+      },
+      "response": []
+    },
+    {
+      "name": "09. GET неіснуючої картинки",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([404]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});",
+              "pm.test(\"Джерело картинки\", function () {",
+              "  pm.expect(pm.response.headers.has(\"X-Image-Source\")).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/432",
+        "description": "Очікується HTTP 404."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Недозволений POST",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 405\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([405]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});",
+              "pm.test(\"Allow\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Allow\")).to.eql(\"GET, PUT, DELETE\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/200",
+        "description": "Очікується HTTP 405."
+      },
+      "response": []
+    },
+    {
+      "name": "11. Очищення після запуску",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "pm.test(\"Content-Type\", function () {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"text/plain; charset=utf-8\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/200",
+        "description": "Очікується HTTP 200."
+      },
+      "response": []
+    }
+  ]
+}
